@@ -11,7 +11,12 @@ import re
 
 # Load environment variables
 load_dotenv()
-genai.configure(api_key=os.getenv("GOOGLE_API_KEY"))
+
+# Configure Google Generative AI only if an API key is provided.
+_GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+if _GOOGLE_API_KEY:
+    genai.configure(api_key=_GOOGLE_API_KEY)
+_gemini_model = None  # lazy init when generation functions are called
 
 # Connect to Redis (Mumbai region)
 start_conn = time.time()
@@ -22,8 +27,16 @@ print(f"Connected to Redis in {time.time() - start_conn:.2f} seconds")
 # Load models only once
 print("Loading embedding model...")
 model = SentenceTransformer("all-mpnet-base-v2")
-gemini = genai.GenerativeModel("gemini-1.5-flash-latest")
-print("Models loaded.")
+print("Embedding model loaded.")
+
+def _get_gemini():
+    """Lazy initializer for the Gemini model. Raises if no API key is configured."""
+    global _gemini_model
+    if _gemini_model is None:
+        if not _GOOGLE_API_KEY:
+            raise RuntimeError("GOOGLE_API_KEY is not set; generation features are disabled.")
+        _gemini_model = genai.GenerativeModel("gemini-1.5-flash-latest")
+    return _gemini_model
 
 # Cosine similarity function
 def cosine_similarity(vec1, vec2):
@@ -71,6 +84,7 @@ Generate a concise organizational process description for the following request:
 Important: describe WHAT the process is — its purpose, scope, key outcomes, and who it's for. Do NOT provide step-by-step instructions or implementation steps.
 Keep the response focused and high-level.
 """
+    gemini = _get_gemini()
     response = gemini.generate_content(prompt)
     return response.text
 
@@ -101,6 +115,7 @@ Important: the description should state WHAT the process is — its purpose, sco
 
 Return only the description text.
 """
+    gemini = _get_gemini()
     resp = gemini.generate_content(prompt)
     return resp.text
 
@@ -114,6 +129,7 @@ Return each task on its own line, prefixed with its number. Produce up to {max_t
 Process description:
 {process_description}
 """
+    gemini = _get_gemini()
     resp = gemini.generate_content(prompt)
     text = resp.text.strip()
     # parse lines that start with a number
@@ -172,6 +188,7 @@ def generate_task_detail(task_name, process_description):
 
 Return the full ~600-word paragraph as plain text.
 """
+    gemini = _get_gemini()
     resp = gemini.generate_content(prompt)
     return resp.text
 
@@ -183,6 +200,7 @@ Task: {task_name}
 Task detail (short): {task_detail[:400]}
 Return only a short job title.
 """
+    gemini = _get_gemini()
     resp = gemini.generate_content(prompt)
     return resp.text.strip().splitlines()[0]
 
@@ -195,6 +213,7 @@ For the job titled '{job_name}', suggest a single Python function name and a one
 Return in the format: function_name: short description
 Use snake_case for function_name.
 """
+    gemini = _get_gemini()
     resp = gemini.generate_content(prompt)
     return resp.text.strip().splitlines()[0]
 
