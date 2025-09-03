@@ -68,7 +68,7 @@ print(f"Connected to Redis in {time.time() - start_conn:.2f} seconds")
 
 # Load models only once
 print("Loading embedding model...")
-model = SentenceTransformer("all-mpnet-base-v2")
+model = SentenceTransformer("all-MiniLM-L6-v2")
 print("Embedding model loaded.")
 
 def _get_gemini():

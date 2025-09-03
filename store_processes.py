@@ -8,7 +8,7 @@ from pathlib import Path
 redis = Redis(url="https://pet-crab-9639.upstash.io", token="ASWnAAIjcDFjYzg0ZjQ4YjE3MjE0OTFiODdmMmJmYjAyZDMzZTFiNXAxMA")
 
 # Load embedding model
-model = SentenceTransformer("all-mpnet-base-v2")
+model = SentenceTransformer("all-MiniLM-L6-v2")
 
 
 # We expect the Excel file to already include a description column. No generation
